@@ -91,15 +91,14 @@ def main_menu():
     Each option will run a specific scan or tool from the 'modules' directory.
     """
     while True:
-        banner()  # Display the banner
+        banner()
         print(Fore.LIGHTCYAN_EX + Style.BRIGHT + "Please select an option:"+ Style.RESET_ALL)
-        # Display available menu options
-        print(Fore.YELLOW + "\n [1] 🖥️   Subdomains Scanner ")
-        print(Fore.YELLOW + " [2] 📡  IP Addresses Scanner")
-        print(Fore.YELLOW + " [3] 🌐  Subdomains Finder")
-        print(Fore.YELLOW + " [4] 🔍  domains hosted on same ip")
-        print(Fore.YELLOW + " [5] 💡  Host OSINT ")
-        print(Fore.YELLOW + " [6] 🧰  TXT Toolkit")
+        print(Fore.LIGHTYELLOW_EX + Style.BRIGHT + " [1] ⚡  Host Scanner(only for pro)")
+        print(Fore.YELLOW + " [2] 🖥️   Subdomains Scanner ")
+        print(Fore.YELLOW + " [3] 📡  IP Addresses Scanner")
+        print(Fore.YELLOW + " [4] 🌐  Subdomains Finder")
+        print(Fore.YELLOW + " [5] 🔍  domains hosted on same ip")
+        print(Fore.YELLOW + " [6] ✂️   TXT Toolkit")
         print(Fore.YELLOW + " [7] 🔓  Open Port Checker")
         print(Fore.YELLOW + " [8] 📜  DNS Records")
         print(Fore.YELLOW + " [9] 📖  Help")
@@ -108,8 +107,15 @@ def main_menu():
         # Get the user's choice
         choice = get_input(Fore.CYAN + " ➜  Enter your choice (1-10): ").strip()
 
+
+        if choice == '1':
+            clear_screen()
+            print(text_to_ascii_banner("HOST Scanner", font="doom", color=Style.BRIGHT+Fore.MAGENTA))
+            import modules.host_scanner as host_scanner
+            host_scanner.advance_main
+            input(Fore.YELLOW + "\n Press Enter to return to the main menu...")
         # Menu option handling
-        if choice == "1":
+        if choice == "2":
             clear_screen()
             print(text_to_ascii_banner("HOST Scanner", font="doom", color=Style.BRIGHT+Fore.MAGENTA))
             import modules.sub_scan as sub_scan
@@ -119,7 +125,7 @@ def main_menu():
             sub_scan.perform_scan(hosts, ports, output_file, threads, method)
             input(Fore.YELLOW + "\n Press Enter to return to the main menu...")
 
-        elif choice == "2":
+        elif choice == "3":
             clear_screen()
             print(text_to_ascii_banner("IP Scanner  ", font="doom", color=Style.BRIGHT+Fore.MAGENTA))
             import modules.ip_scan as ip_scan
@@ -132,21 +138,21 @@ def main_menu():
             ip_scan.perform_scan(hosts, ports, output_file, threads, http_method)
             input(Fore.YELLOW + "\n Press Enter to return to the main menu...")
 
-        elif choice == "3":
+        elif choice == "4":
             clear_screen()
             print(text_to_ascii_banner("Subfinder ", font="doom", color=Style.BRIGHT+Fore.MAGENTA))
             import modules.sub_finder as sub_finder
             sub_finder.find_subdomains()
             input(Fore.YELLOW + "\n Press Enter to return to the main menu...")
 
-        elif choice == "4":
+        elif choice == "5":
             clear_screen()
             print(text_to_ascii_banner("IP LookUP ", font="doom", color=Style.BRIGHT+Fore.MAGENTA))
             import modules.ip_lookup as ip_lookup
             ip_lookup.Ip_lockup_menu()
             input(Fore.YELLOW + "\n Press Enter to return to the main menu...")
 
-        elif choice == "5":
+        elif choice == "osint":
             clear_screen()
             print(text_to_ascii_banner("OSINT ", font="doom", color=Style.BRIGHT+Fore.MAGENTA))
             import modules.osint as osint

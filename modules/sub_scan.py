@@ -1,30 +1,28 @@
+
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import math
 import os
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-import threading
-import requests
-from colorama import Fore, Style, Back, init
 import socket
+import threading
+import time
+from colorama import Fore, Style
+import requests
+file_write_lock = threading.Lock()
 
-init(autoreset=True)  # Initialize colorama for cross-platform terminal colors
-file_write_lock = threading.Lock()  # Lock for thread-safe file writing
 
-DEFAULT_TIMEOUT1 = 5  # Default timeout for HTTP requests
-EXCLUDE_LOCATIONS = ["https://jio.com/BalanceExhaust", "http://filter.ncell.com.np/nc"]  # URLs to exclude from results
+DEFAULT_TIMEOUT1 = 5
+EXCLUDE_LOCATIONS = ["https://jio.com/BalanceExhaust", "http://filter.ncell.com.np/nc"]
 
-# Clear the screen based on the OS
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-# Function to get user input with an optional default value
+    
 def get_input(prompt, default=None):
     response = input(prompt + Style.BRIGHT).strip()
     print(Style.RESET_ALL)
     return response if response else default or ""
 
-# Function to extract hostnames from a file, ignoring empty lines
 def get_hosts_from_file(file_path):
     path = Path(file_path)
     if path.is_file():
@@ -32,38 +30,35 @@ def get_hosts_from_file(file_path):
             return [line.strip() for line in path.read_text().splitlines() if line.strip()]
         except Exception as e:
             print(Fore.RED + f"Error reading file: {e}")
-    return []  # Return an empty list if file reading fails or file is not found
+    return []
 
-# Function to ask for the HTTP method, defaulting to HEAD if not provided
-def get_http_method():
+def get1_http_method():
     methods = ['GET', 'POST', 'PATCH', 'OPTIONS', 'PUT', 'DELETE', 'TRACE', 'HEAD']
     print(Fore.LIGHTCYAN_EX + Style.BRIGHT + "🌐 Available HTTP methods: " + ", ".join(methods))
     method = get_input(Fore.CYAN+"\n↪ Select an HTTP method (default: HEAD): ", "HEAD").upper()
-    return method if method in methods else "HEAD"  # Validate and return the chosen method
+    return method if method in methods else "HEAD"
 
-# Function to manage file navigation and selection (can go up directories)
+
+
+
 def file_manager(start_dir, max_up_levels=None, max_invalid_attempts=3):
     current_dir = start_dir
     levels_up = 0
-    directory_stack = [start_dir]  # Stack to keep track of the navigation history
-    invalid_attempts = 0  # Track invalid attempts to prevent infinite loop
+    directory_stack = [start_dir]
+    invalid_attempts = 0
 
     while True:
-        # List .txt files and directories in the current directory
         files_in_directory = [f for f in current_dir.iterdir() if f.is_file() and f.suffix == '.txt']
         directories_in_directory = [d for d in current_dir.iterdir() if d.is_dir()]
 
-        # Display message if no files or directories are found
         if not files_in_directory and not directories_in_directory:
             print(Fore.RED + "⚠️  No .txt files or directories found.")
             return None
 
-        # Display files and directories in a two-column layout for better readability
         print(Fore.CYAN + f"\n📂 Contents of '{current_dir}':")
-        combined_items = directories_in_directory + files_in_directory  # Combine files and directories
+        combined_items = directories_in_directory + files_in_directory
         half = math.ceil(len(combined_items) / 2)
 
-        # Split items into two columns
         for i in range(half):
             left_item = combined_items[i]
             left_prefix = "📁 " if left_item.is_dir() else "📄 "
@@ -79,35 +74,33 @@ def file_manager(start_dir, max_up_levels=None, max_invalid_attempts=3):
 
             print(f"{left:<50} {right}")
 
-        # Display an option to move up a directory
         print(Fore.LIGHTBLUE_EX +"\n0. " + Fore.LIGHTBLUE_EX + " ↑ Move up a directory" + Style.RESET_ALL)
 
-        # Prompt the user for a file or directory selection
         file_selection = get_input(Fore.CYAN + " ➜  Enter the number or filename (e.g., 1 or domain.txt): ").strip()
 
-        # Check if input is '0' to move up
         if file_selection == '0':
+            # Determine if moving up is allowed based on max_up_levels
             if max_up_levels is not None and levels_up >= max_up_levels:
                 print(Fore.RED + "⚠️ You've reached the maximum level above the start directory.")
             elif current_dir.parent == current_dir:
                 print(Fore.RED + "⚠️ You are at the root directory and cannot move up further.")
             else:
-                current_dir = current_dir.parent  # Move up one level
+                current_dir = current_dir.parent
                 levels_up += 1
                 continue
 
         try:
-            # Check if input is a valid directory or file index
             file_index = int(file_selection) - 1
             if file_index < 0 or file_index >= len(combined_items):
                 raise IndexError
             selected_item = combined_items[file_index]
 
-            # Navigate into selected directory
             if selected_item.is_dir():
-                directory_stack.append(current_dir)  # Save the current directory before moving
+                directory_stack.append(current_dir)
                 current_dir = selected_item
-                levels_up = 0  # Reset level count when entering a subdirectory
+                levels_up = 0  # Reset level count when navigating into a subdirectory
+
+                # Check if the new directory contains .txt files or directories
                 txt_files = [f for f in current_dir.iterdir() if f.is_file() and f.suffix == '.txt']
                 sub_dirs = [d for d in current_dir.iterdir() if d.is_dir()]
                 
@@ -118,7 +111,7 @@ def file_manager(start_dir, max_up_levels=None, max_invalid_attempts=3):
             else:
                 return selected_item  # Return the selected .txt file
         except (ValueError, IndexError):
-            # Handle invalid input or if file is not found
+            # If not a valid number, treat as filename input
             file_input = current_dir / file_selection
 
             if file_input.is_file() and file_input.suffix == '.txt':
@@ -127,14 +120,13 @@ def file_manager(start_dir, max_up_levels=None, max_invalid_attempts=3):
                 print(Fore.RED + f"⚠️  File '{file_input}' not found or not a .txt file. Please try again.")
                 invalid_attempts += 1
 
-        # Exit file manager after too many invalid attempts
         if invalid_attempts >= max_invalid_attempts:
             print(Fore.RED + "⚠️ Too many invalid attempts. Returning to the main menu.")
             return None
 
-# Function to get scan inputs such as hosts, ports, and other configuration details
-def get_scan_inputs():
-    start_dir = Path('.').resolve()  # Set the starting directory for file manager
+
+def get1_scan_inputs():
+    start_dir = Path('.').resolve()  # Set starting directory
     selected_file = file_manager(start_dir, max_up_levels=3)  # Call the file manager
 
     if not selected_file:
@@ -152,92 +144,100 @@ def get_scan_inputs():
     output_file = get_input(Fore.CYAN + "➜ Enter output file name (default: results_inputfile.txt): ", f"results_{selected_file.name}").strip()
     output_file = output_file or f"results_{selected_file.name}"
     threads = int(get_input(Fore.CYAN + "➜ Enter number of threads (default: 50): ", "50") or "50")
-    http_method = get_http_method()
+    http_method = get1_http_method()
     return hosts, ports, output_file, threads, http_method
 
-# Function to format the results for printing in the output
-def format_row(code, server, port, ip_address, host, use_colors=True):
+
+
+
+def format1_row(code, server, port, ip_address, host, use_colors=True):
     return (f"{Fore.GREEN if use_colors else ''}{code:<4} " +
             f"{Fore.CYAN if use_colors else ''}{server:<20} " +
             f"{Fore.YELLOW if use_colors else ''}{port:<5} " +
             f"{Fore.MAGENTA if use_colors else ''}{ip_address:<15} " +
             f"{Fore.LIGHTBLUE_EX if use_colors else ''}{host}")
 
-# Function to check HTTP response status for a given host and port
-def check_http_response(host, port, method):
+def check1_http_response(host, port, method):
     url = f"{'https' if port in ['443', '8443'] else 'http'}://{host}:{port}"
     try:
+        # Make the request with improved error handling and timeout
         response = requests.request(method, url, timeout=DEFAULT_TIMEOUT1, allow_redirects=True)
+        
+        # Check if location contains excluded terms
         if any(exclude in response.headers.get('Location', '') for exclude in EXCLUDE_LOCATIONS):
-            return None  # Exclude if the response location matches the exclude list
-        return response.status_code, response.headers.get('Server', 'N/A')
-    except requests.RequestException:
-        return None  # Return None if there's an exception during the request
+            return None
+        
+        # Construct response tuple with fallback for missing values
+        status_code = response.status_code
+        server_header = response.headers.get('Server', 'N/A')
+        ip_address = get_ip_from_host(host) or 'N/A'
+        
+        # Return tuple with cleaner data for printing
+        return (status_code, server_header, port, ip_address, host)
+    
+    except requests.exceptions.RequestException as e:
+        # Log error silently if needed or pass without returning an error
+        # print(f"Error fetching {url}: {e}")  # Comment this out for silent fail
+        return None
 
-# Function to get the IP address from a host, returns 'N/A' on failure
+
 def get_ip_from_host(host):
     try:
         return socket.gethostbyname(host)
     except socket.gaierror:
-        return "N/A"  # Return 'N/A' if there's an error in resolving the host
+        return "N/A"
 
-# Function to format elapsed time into minutes and seconds or just seconds
 def format1_time(elapsed_time):
     return f"{int(elapsed_time // 60)}m {int(elapsed_time % 60)}s" if elapsed_time >= 60 else f"{elapsed_time:.2f}s"
 
-# Function to perform the scan using HTTP method for each host and port combination
-def perform_scan(hosts, ports, output_file, threads, method):
-    clear_screen()  # Clear the terminal screen before starting the scan
+
+def perform1_scan(hosts, ports, output_file, threads, method):
+    clear_screen()
     print(Fore.LIGHTGREEN_EX + f"🔍 Scanning using HTTP method: {method}...\n")
 
-    # Header for the scan results table
     headers = Fore.GREEN + Style.BRIGHT + "Code  " + Fore.CYAN + "Server               " + \
               Fore.YELLOW + "Port   " + Fore.MAGENTA + "IP Address     " + Fore.LIGHTBLUE_EX + "Host" + Style.RESET_ALL
-    separator = "-" * 65  # Separator line for the result table
+    separator = "-" * 65
 
-    # Check and prepare the output file for saving results
+    # Prepare the output file
     try:
         existing_lines = Path(output_file).is_file() and sum(1 for _ in open(output_file, 'r'))
         with open(output_file, 'a') as file:
-            if not existing_lines:  # Write headers to the file if it's empty
+            if not existing_lines:
                 file.write(f"{headers}\n{separator}\n")
     except Exception as e:
         print(Fore.RED + f"Error opening output file: {e}")
-        return  # Exit the scan if file cannot be opened
+        return
 
-    # Display headers in the terminal
+    # Display headers
     print(headers, separator, sep='\n')
 
-    start_time = time.time()  # Start the timer for elapsed time tracking
-    total_hosts, scanned_hosts, responded_hosts = len(hosts) * len(ports), 0, 0  # Track total, scanned, and responded hosts
+    start_time = time.time()
+    total_hosts, scanned_hosts, responded_hosts = len(hosts) * len(ports), 0, 0
 
-    # Use ThreadPoolExecutor to manage concurrent HTTP requests for scanning
     with ThreadPoolExecutor(max_workers=threads) as executor:
-        # Submit all host-port combinations for scanning
-        futures = [executor.submit(check_http_response, host, port, method) for host in hosts for port in ports]
+        futures = [executor.submit(check1_http_response, host, port, method) for host in hosts for port in ports]
         
-        for future in as_completed(futures):  # Process each future as it completes
-            scanned_hosts += 1  # Increment the count of scanned hosts
+        for future in as_completed(futures):
+            scanned_hosts += 1
             try:
-                # Wait for the result from the future with a small timeout buffer
-                result = future.result(timeout=DEFAULT_TIMEOUT1 + 1)
-                
-                if result:  # If a result is received, increment responded_hosts
+                result = future.result(timeout=DEFAULT_TIMEOUT1 + 1)  # Small extra time in case of delay
+                if result:
                     responded_hosts += 1
-                    row = format_row(*result)  # Format the result into a table row
-                    print(row)  # Print the row to the terminal
+                    row = format1_row(*result)
+                    print(row)
                     
-                    # Write results to the output file with thread-safe access
+                    # Write results to the file with lock to ensure safe concurrent access
                     with file_write_lock:
                         with open(output_file, 'a') as file:
-                            file.write(format_row(*result, use_colors=False) + "\n")
-            except requests.exceptions.RequestException as e:
-                print(Fore.RED + f"Request error on host {hosts}:{ports} - {e}")  # Handle request-specific errors
-            except Exception as e:
-                print(Fore.RED + f"Error in scan for host {hosts}:{ports} - {e}")  # Handle general scan errors
+                            file.write(format1_row(*result, use_colors=False) + "\n")
+            except Exception:
+                pass  # Silently ignore failed scans without logging or counting them
 
-            # Display scan progress in real-time, updating on the same line
+            # Display progress
             elapsed_time = time.time() - start_time
             print(Style.BRIGHT + f"Scanned {scanned_hosts}/{total_hosts} - Responded: {responded_hosts} - Elapsed: {format1_time(elapsed_time)}", end='\r')
 
-    print(f"\n\n{Fore.GREEN}✅ Scan completed! Results saved to {output_file}.")  # Completion message
+    # Final message
+    print(f"\n\n{Fore.GREEN}✅ Scan completed! {responded_hosts}/{scanned_hosts} hosts responded.")
+    print(f"{Fore.GREEN}Results saved to {output_file}.{Style.RESET_ALL}")
