@@ -49,17 +49,18 @@ BugScanX automatically installs all required modules and libraries on the first 
 - **ssl**
 - **beautifulsoup4**
 - **dnspython**
+- **multithreading**
 
 ### Manual Installation (Optional)
 If you prefer to install dependencies manually, run:
 ```bash
-pip install requests colorama ipaddress pyfiglet socket ssl beautifulsoup4 dnspython
+pip install requests colorama ipaddress pyfiglet socket ssl beautifulsoup4 dnspython multithreading
 ```
 
 ### Clone the Repository
 ```bash
 git clone https://github.com/ayanrajpoot10/BugScanx.git
-cd BugScanx
+cd BugScanX
 ```
 
 --- 

@@ -112,7 +112,7 @@ def main_menu():
             clear_screen()
             print(text_to_ascii_banner("HOST Scanner", font="doom", color=Style.BRIGHT+Fore.MAGENTA))
             import modules.host_scanner as host_scanner
-            host_scanner.advance_main
+            host_scanner.advance_main()
             input(Fore.YELLOW + "\n Press Enter to return to the main menu...")
         # Menu option handling
         if choice == "2":

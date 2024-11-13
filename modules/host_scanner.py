@@ -6,7 +6,17 @@ import sys
 from colorama import Fore, Style
 import multithreading
 import requests
-from sub_scan import get_input
+
+
+
+def get_input(prompt, default=None):
+    """
+    Utility function to get user input with a prompt.
+    Returns default if user does not provide input.
+    """
+    response = input(prompt + Style.BRIGHT).strip()
+    print(Style.RESET_ALL)
+    return response if response else default or ""
 
 
 class BugScanner(multithreading.MultiThreadRequest):
