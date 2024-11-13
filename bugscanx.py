@@ -119,7 +119,7 @@ def main_menu():
             clear_screen()
             print(text_to_ascii_banner("HOST Scanner", font="doom", color=Style.BRIGHT+Fore.MAGENTA))
             import modules.sub_scan as sub_scan
-            hosts, ports, output_file, threads, method = sub_scan.get_scan_inputs()
+            hosts, ports, output_file, threads, method = sub_scan.get1_scan_inputs()
             if hosts is None:
                 continue
             sub_scan.perform_scan(hosts, ports, output_file, threads, method)
