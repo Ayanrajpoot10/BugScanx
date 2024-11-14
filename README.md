@@ -58,7 +58,7 @@ pip install requests colorama ipaddress pyfiglet socket ssl beautifulsoup4 dnspy
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/ayanrajpoot10/BugScanx.git
+git clone https://github.com/ayanrajpoot10/BugScanX.git
 cd BugScanX
 ```
 
